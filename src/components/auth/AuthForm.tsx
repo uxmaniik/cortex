@@ -5,15 +5,26 @@ import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Loader2, CheckCircle2, AlertCircle, Eye, EyeOff, Check } from 'lucide-react'
 
 export function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+
+  // Password validation rules
+  const passwordRules = {
+    minLength: password.length >= 6,
+    hasUpperCase: /[A-Z]/.test(password),
+    hasLowerCase: /[a-z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
+  }
+  
+  const isPasswordValid = isSignUp ? Object.values(passwordRules).every(Boolean) : password.length > 0
 
   const { signUp, signIn } = useAuth()
 
@@ -99,24 +110,83 @@ export function AuthForm() {
               <label htmlFor="password" className="text-sm font-medium">
                 Password
               </label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                aria-required="true"
-                aria-invalid={error ? 'true' : 'false'}
-                aria-describedby={error ? 'error-message' : undefined}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && email && password) {
-                    handleSubmit(e as any)
-                  }
-                }}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                  aria-required="true"
+                  aria-invalid={error ? 'true' : 'false'}
+                  aria-describedby={error ? 'error-message' : undefined}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && email && password && (isSignUp ? isPasswordValid : true)) {
+                      handleSubmit(e as any)
+                    }
+                  }}
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} className="text-muted-foreground" />
+                  ) : (
+                    <Eye size={18} className="text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              
+              {/* Password Rules - Only show on signup */}
+              {isSignUp && password.length > 0 && (
+                <div className="space-y-1.5 pt-2">
+                  <div className="flex items-center gap-2 text-xs">
+                    <Check 
+                      size={14} 
+                      className={passwordRules.minLength ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'} 
+                    />
+                    <span className={passwordRules.minLength ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
+                      At least 6 characters
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <Check 
+                      size={14} 
+                      className={passwordRules.hasUpperCase ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'} 
+                    />
+                    <span className={passwordRules.hasUpperCase ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
+                      One uppercase letter
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <Check 
+                      size={14} 
+                      className={passwordRules.hasLowerCase ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'} 
+                    />
+                    <span className={passwordRules.hasLowerCase ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
+                      One lowercase letter
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <Check 
+                      size={14} 
+                      className={passwordRules.hasNumber ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'} 
+                    />
+                    <span className={passwordRules.hasNumber ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
+                      One number
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {error && (
@@ -144,7 +214,7 @@ export function AuthForm() {
 
             <Button
               type="submit"
-              disabled={loading || !email || !password}
+              disabled={loading || !email || !password || (isSignUp && !isPasswordValid)}
               className="w-full"
               aria-label={isSignUp ? 'Sign up' : 'Sign in'}
             >
@@ -166,6 +236,8 @@ export function AuthForm() {
                   setIsSignUp(!isSignUp)
                   setError(null)
                   setSuccess(null)
+                  setPassword('')
+                  setShowPassword(false)
                 }}
                 aria-label={isSignUp ? 'Switch to sign in' : 'Switch to sign up'}
               >

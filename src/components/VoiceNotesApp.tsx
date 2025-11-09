@@ -852,7 +852,7 @@ export function VoiceNotesApp() {
           </div>
           
           <div className="mb-6">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} aria-hidden="true" />
                 <Input
@@ -864,64 +864,66 @@ export function VoiceNotesApp() {
                 />
               </div>
               
-              {/* Stats Dropdown */}
-              <div className="flex items-center border rounded-md p-1 bg-background">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 gap-2" aria-label="View statistics">
-                      <Menu size={16} aria-hidden="true" />
-                      <span className="hidden sm:inline">Stats</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Statistics</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="flex items-center justify-between">
-                      <span>Total Notes</span>
-                      <Badge variant="secondary">{stats.totalNotes}</Badge>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex items-center justify-between">
-                      <span>Completed</span>
-                      <Badge variant="default" className="bg-green-500">{stats.completedNotes}</Badge>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex items-center justify-between">
-                      <span>Pending</span>
-                      <Badge variant="secondary">{stats.pendingNotes}</Badge>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="flex items-center justify-between">
-                      <span>Total Plays</span>
-                      <Badge variant="secondary">{stats.totalPlayCount}</Badge>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              
-              {/* View Toggle */}
-              <div className="flex items-center gap-1 border rounded-md p-1 bg-background" role="group" aria-label="View type">
-                <Button
-                  variant={viewType === 'list' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewType('list')}
-                  className="h-8"
-                  aria-label="List view"
-                  aria-pressed={viewType === 'list'}
-                >
-                  <List size={16} className="mr-2" aria-hidden="true" />
-                  List
-                </Button>
-                <Separator orientation="vertical" className="h-6" aria-hidden="true" />
-                <Button
-                  variant={viewType === 'grid' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewType('grid')}
-                  className="h-8"
-                  aria-label="Grid view"
-                  aria-pressed={viewType === 'grid'}
-                >
-                  <Grid size={16} className="mr-2" aria-hidden="true" />
-                  Grid
-                </Button>
+              <div className="flex items-center gap-2 sm:gap-4">
+                {/* Stats Dropdown */}
+                <div className="flex items-center border rounded-md p-1 bg-background">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 gap-2" aria-label="View statistics">
+                        <Menu size={16} aria-hidden="true" />
+                        <span className="hidden sm:inline">Stats</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>Statistics</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="flex items-center justify-between">
+                        <span>Total Notes</span>
+                        <Badge variant="secondary">{stats.totalNotes}</Badge>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="flex items-center justify-between">
+                        <span>Completed</span>
+                        <Badge variant="default" className="bg-green-500">{stats.completedNotes}</Badge>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="flex items-center justify-between">
+                        <span>Pending</span>
+                        <Badge variant="secondary">{stats.pendingNotes}</Badge>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="flex items-center justify-between">
+                        <span>Total Plays</span>
+                        <Badge variant="secondary">{stats.totalPlayCount}</Badge>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                
+                {/* View Toggle */}
+                <div className="flex items-center gap-1 border rounded-md p-1 bg-background" role="group" aria-label="View type">
+                  <Button
+                    variant={viewType === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewType('list')}
+                    className="h-8"
+                    aria-label="List view"
+                    aria-pressed={viewType === 'list'}
+                  >
+                    <List size={16} className="sm:mr-2" aria-hidden="true" />
+                    <span className="hidden sm:inline">List</span>
+                  </Button>
+                  <Separator orientation="vertical" className="h-6" aria-hidden="true" />
+                  <Button
+                    variant={viewType === 'grid' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewType('grid')}
+                    className="h-8"
+                    aria-label="Grid view"
+                    aria-pressed={viewType === 'grid'}
+                  >
+                    <Grid size={16} className="sm:mr-2" aria-hidden="true" />
+                    <span className="hidden sm:inline">Grid</span>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -1035,7 +1037,7 @@ export function VoiceNotesApp() {
                       </div>
                     ) : (
                       // List View
-                      <div className="flex items-center justify-between gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                         <div className="flex-1 min-w-0">
                           {editingId === note.id ? (
                             <div className="flex items-center gap-2">
@@ -1054,21 +1056,21 @@ export function VoiceNotesApp() {
                                 size="icon" 
                                 variant="ghost" 
                                 onClick={saveTitle}
-                                className="h-8 w-8"
+                                className="h-8 w-8 sm:h-9 sm:w-9"
                                 aria-label="Save title"
                                 title="Save (Enter)"
                               >
-                                <Check size={16} aria-hidden="true" />
+                                <Check size={16} className="sm:w-[18px] sm:h-[18px]" aria-hidden="true" />
                               </Button>
                               <Button 
                                 size="icon" 
                                 variant="ghost" 
                                 onClick={cancelEditing}
-                                className="h-8 w-8"
+                                className="h-8 w-8 sm:h-9 sm:w-9"
                                 aria-label="Cancel editing"
                                 title="Cancel (Esc)"
                               >
-                                <X size={16} aria-hidden="true" />
+                                <X size={16} className="sm:w-[18px] sm:h-[18px]" aria-hidden="true" />
                               </Button>
                             </div>
                           ) : (
@@ -1085,20 +1087,20 @@ export function VoiceNotesApp() {
                           )}
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                           <Button
                             size="icon"
                             variant={isPlaying ? "default" : "ghost"}
                             onClick={() => playAudio(note.audio_url, note.id)}
-                            className={`h-9 w-9 ${isPlaying ? 'bg-primary animate-pulse' : ''}`}
+                            className={`h-8 w-8 sm:h-9 sm:w-9 ${isPlaying ? 'bg-primary animate-pulse' : ''}`}
                             aria-label={isPlaying ? 'Pause audio' : 'Play audio'}
                             aria-pressed={isPlaying}
                             title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
                           >
                             {isPlaying ? (
-                              <Pause size={18} aria-hidden="true" />
+                              <Pause size={16} className="sm:w-[18px] sm:h-[18px]" aria-hidden="true" />
                             ) : (
-                              <Play size={18} aria-hidden="true" />
+                              <Play size={16} className="sm:w-[18px] sm:h-[18px]" aria-hidden="true" />
                             )}
                           </Button>
 
@@ -1106,23 +1108,23 @@ export function VoiceNotesApp() {
                             size="icon"
                             variant={note.completed ? "default" : "ghost"}
                             onClick={() => toggleComplete(note.id, note.completed || false)}
-                            className="h-9 w-9"
+                            className="h-8 w-8 sm:h-9 sm:w-9"
                             aria-label={note.completed ? 'Mark as incomplete' : 'Mark as completed'}
                             aria-pressed={note.completed}
                             title={note.completed ? 'Mark as incomplete' : 'Mark as completed'}
                           >
-                            <Check size={18} strokeWidth={2.5} aria-hidden="true" />
+                            <Check size={16} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} aria-hidden="true" />
                           </Button>
 
                           <Button
                             size="icon"
                             variant="ghost"
                             onClick={() => startEditing(note)}
-                            className="h-9 w-9"
+                            className="h-8 w-8 sm:h-9 sm:w-9"
                             aria-label="Edit title"
                             title="Edit title"
                           >
-                            <Edit2 size={18} aria-hidden="true" />
+                            <Edit2 size={16} className="sm:w-[18px] sm:h-[18px]" aria-hidden="true" />
                           </Button>
 
                           <Button
@@ -1132,25 +1134,25 @@ export function VoiceNotesApp() {
                               setNoteToDelete(note.id)
                               setDeleteDialogOpen(true)
                             }}
-                            className="h-9 w-9"
+                            className="h-8 w-8 sm:h-9 sm:w-9"
                             aria-label="Delete note"
                             title="Delete"
                           >
-                            <Trash2 size={18} className="text-destructive" aria-hidden="true" />
+                            <Trash2 size={16} className="sm:w-[18px] sm:h-[18px] text-destructive" aria-hidden="true" />
                           </Button>
 
                           <Button
                             size="icon"
                             variant="ghost"
                             onClick={() => toggleExpanded(note.id)}
-                            className="h-9 w-9"
+                            className="h-8 w-8 sm:h-9 sm:w-9"
                             aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
                             aria-expanded={isExpanded}
                             title={isExpanded ? 'Collapse' : 'Expand'}
                           >
                             <ChevronDown 
-                              size={18} 
-                              className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                              size={16} 
+                              className={`sm:w-[18px] sm:h-[18px] transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                               aria-hidden="true"
                             />
                           </Button>
