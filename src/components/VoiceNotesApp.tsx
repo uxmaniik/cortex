@@ -222,6 +222,32 @@ export function VoiceNotesApp() {
     return `Voice Note ${dateStr} ${timeStr} #${count}`
   }, [voiceNotes.length])
 
+  // Play beep sound function
+  const playBeep = useCallback((frequency: number = 800, duration: number = 100) => {
+    if (!soundEnabled) return
+    
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      
+      oscillator.frequency.value = frequency
+      oscillator.type = 'sine'
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000)
+      
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + duration / 1000)
+    } catch (error) {
+      // Silently fail if audio context is not available
+      console.debug('Beep sound not available:', error)
+    }
+  }, [soundEnabled])
+
   const startRecording = useCallback(async () => {
     if (!user) {
       toast.error('You must be logged in to record')
@@ -344,32 +370,6 @@ export function VoiceNotesApp() {
       toast.error(errorMessage)
     }
   }, [user, generateDefaultTitle, playBeep])
-
-  // Play beep sound function
-  const playBeep = useCallback((frequency: number = 800, duration: number = 100) => {
-    if (!soundEnabled) return
-    
-    try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-      const oscillator = audioContext.createOscillator()
-      const gainNode = audioContext.createGain()
-      
-      oscillator.connect(gainNode)
-      gainNode.connect(audioContext.destination)
-      
-      oscillator.frequency.value = frequency
-      oscillator.type = 'sine'
-      
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000)
-      
-      oscillator.start(audioContext.currentTime)
-      oscillator.stop(audioContext.currentTime + duration / 1000)
-    } catch (error) {
-      // Silently fail if audio context is not available
-      console.debug('Beep sound not available:', error)
-    }
-  }, [soundEnabled])
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
