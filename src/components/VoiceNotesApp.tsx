@@ -65,6 +65,7 @@ export function VoiceNotesApp() {
   const [editingNotes, setEditingNotes] = useState<Record<string, string>>({})
   const [savingNotes, setSavingNotes] = useState<Set<string>>(new Set())
   const [viewType, setViewType] = useState<'list' | 'grid'>('list')
+  const [currentTimeForRelative, setCurrentTimeForRelative] = useState(() => Date.now())
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
@@ -97,6 +98,16 @@ export function VoiceNotesApp() {
   useEffect(() => {
     setMounted(true)
     loadVoiceNotes()
+  }, [])
+
+  // Update current time for relative timestamps periodically (every 10 seconds)
+  // This prevents all timestamps from updating on every render
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTimeForRelative(Date.now())
+    }, 10000) // Update every 10 seconds
+
+    return () => clearInterval(interval)
   }, [])
 
   // Filter notes based on search query
@@ -206,6 +217,8 @@ export function VoiceNotesApp() {
       if (error) throw error
       setVoiceNotes(data || [])
       setFilteredNotes(data || [])
+      // Update current time when notes are loaded to ensure new notes show correctly
+      setCurrentTimeForRelative(Date.now())
     } catch (error) {
       console.error('Error loading voice notes:', error)
       toast.error('Failed to load voice notes')
@@ -732,9 +745,18 @@ export function VoiceNotesApp() {
   }, [])
 
   const formatRelativeTime = useCallback((dateString: string) => {
-    const now = new Date()
+    const now = currentTimeForRelative
     const date = new Date(dateString)
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+    const diffInSeconds = Math.floor((now - date.getTime()) / 1000)
+
+    // Handle negative time (future dates) or very recent (less than 1 second)
+    if (diffInSeconds < 0) {
+      return 'just now'
+    }
+
+    if (diffInSeconds < 1) {
+      return 'just now'
+    }
 
     if (diffInSeconds < 60) {
       return `${diffInSeconds} second${diffInSeconds !== 1 ? 's' : ''} ago`
@@ -767,7 +789,7 @@ export function VoiceNotesApp() {
 
     const diffInYears = Math.floor(diffInDays / 365)
     return `${diffInYears} year${diffInYears !== 1 ? 's' : ''} ago`
-  }, [])
+  }, [currentTimeForRelative])
 
   const getUserInitial = useCallback(() => {
     return user?.email?.charAt(0).toUpperCase() || 'U'
