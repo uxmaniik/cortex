@@ -859,7 +859,7 @@ export function VoiceNotesApp() {
           <Card className="bg-muted/30">
             <CardContent className="pt-6">
               <div className="text-center space-y-6">
-                <div className="text-6xl font-mono font-bold tracking-tighter min-h-[80px] flex items-center justify-center" aria-live="polite" aria-atomic="true">
+                <div className="text-6xl font-mono font-bold tracking-tighter min-h-[80px] flex items-center justify-center tabular-nums" aria-live="polite" aria-atomic="true">
                   {mounted ? formatTime(recordingTime) : '00:00'}
                 </div>
 
