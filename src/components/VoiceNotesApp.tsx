@@ -7,6 +7,7 @@ import {
   Mic, Square, Play, Pause, LogOut, Edit2, Check, X, Trash2, 
   Search, Volume2, VolumeX, ChevronDown, Grid, List, Menu
 } from 'lucide-react'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -828,6 +829,7 @@ export function VoiceNotesApp() {
                 {getUserInitial()}
               </AvatarFallback>
             </Avatar>
+            <ThemeToggle />
             <Button
               variant="ghost"
               size="icon"
