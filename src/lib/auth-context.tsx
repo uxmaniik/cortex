@@ -45,11 +45,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase])
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
+    // Get the site URL from environment or use current origin
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+                   (typeof window !== 'undefined' ? window.location.origin : 'https://cortex-psi.vercel.app')
+    
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${siteUrl}/auth/callback`,
+      },
     })
-    return { error }
+    return { data, error }
   }
 
   const signIn = async (email: string, password: string) => {
