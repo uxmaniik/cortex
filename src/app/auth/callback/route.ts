@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   const next = requestUrl.searchParams.get('next') || '/'
 
   if (token_hash && type) {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     
     // Create server-side Supabase client
     const supabase = createServerClient(

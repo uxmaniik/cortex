@@ -35,27 +35,21 @@ export function AuthForm() {
     setSuccess(null)
 
     try {
-      const { error, data } = isSignUp
-        ? await signUp(email, password)
-        : await signIn(email, password)
-
-      if (error) {
-        // Provide user-friendly error messages
-        let errorMessage = error.message
+      if (isSignUp) {
+        const { error, data } = await signUp(email, password)
         
-        if (error.message.includes('Invalid login credentials')) {
-          errorMessage = 'Invalid email or password. Please check your credentials and try again.'
-        } else if (error.message.includes('Email not confirmed')) {
-          errorMessage = 'Please check your email and click the confirmation link to verify your account.'
-        } else if (error.message.includes('User already registered')) {
-          errorMessage = 'An account with this email already exists. Please sign in instead.'
-        } else if (error.message.includes('Password')) {
-          errorMessage = 'Password must be at least 6 characters long.'
-        }
-        
-        setError(errorMessage)
-      } else {
-        if (isSignUp) {
+        if (error) {
+          // Provide user-friendly error messages
+          let errorMessage = error.message
+          
+          if (error.message.includes('User already registered')) {
+            errorMessage = 'An account with this email already exists. Please sign in instead.'
+          } else if (error.message.includes('Password')) {
+            errorMessage = 'Password must be at least 6 characters long.'
+          }
+          
+          setError(errorMessage)
+        } else {
           // Check if email confirmation is required
           if (data?.user && !data.session) {
             setSuccess('Account created! Please check your email to confirm your account before signing in.')
@@ -64,6 +58,21 @@ export function AuthForm() {
           } else {
             setSuccess('Account created successfully! Redirecting...')
           }
+        }
+      } else {
+        const { error } = await signIn(email, password)
+        
+        if (error) {
+          // Provide user-friendly error messages
+          let errorMessage = error.message
+          
+          if (error.message.includes('Invalid login credentials')) {
+            errorMessage = 'Invalid email or password. Please check your credentials and try again.'
+          } else if (error.message.includes('Email not confirmed')) {
+            errorMessage = 'Please check your email and click the confirmation link to verify your account.'
+          }
+          
+          setError(errorMessage)
         } else {
           setSuccess('Signing you in...')
         }
