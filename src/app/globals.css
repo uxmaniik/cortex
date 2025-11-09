@@ -2,60 +2,64 @@
 
 @layer base {
   :root {
-    /* Surfaces */
+    /* Surfaces (Light) */
     --background: 0 0% 100%;
-    --foreground: 222.2 47.4% 11.2%;
+    --foreground: 222.2 47.4% 11.2%;         /* near-black text */
     --card: 0 0% 100%;
     --card-foreground: 222.2 47.4% 11.2%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 47.4% 11.2%;
 
-    /* Brand */
-    --primary: 245 75% 58%;     /* indigo-600 */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 215 20% 24%;   /* slate-700 (buttons/surfaces) */
+    /* Brand - Minimal (Light) */
+    --primary: 222.2 47.4% 11.2%;            /* black-ish primary for professionalism */
+    --primary-foreground: 0 0% 100%;         /* white on primary */
+    --secondary: 215 20% 24%;                /* slate-700 for subtle fills */
     --secondary-foreground: 0 0% 100%;
-    --accent: 174 72% 37%;      /* teal-500 */
+    --accent: 222.2 47.4% 11.2%;             /* reduce extra color; align with primary */
     --accent-foreground: 0 0% 100%;
 
-    /* Semantic */
-    --muted: 215 16% 47%;
-    --muted-foreground: 215 16% 24%;
-    --destructive: 351 74% 51%; /* rose-600 */
+    /* Semantic (kept but de-emphasized in UI) */
+    --muted: 215 16% 47%;                    /* slate-500 for subdued text/icons */
+    --muted-foreground: 215 16% 24%;         /* slate-600 for muted-on-muted */
+    --destructive: 351 74% 51%;              /* rose-600 */
     --destructive-foreground: 0 0% 100%;
 
-    /* Lines & focus */
-    --border: 214 32% 91%;      /* slate-200 */
+    /* Lines & focus (Light) */
+    --border: 214 32% 91%;                   /* slate-200 */
     --input: 214 32% 91%;
-    --ring: 245 75% 58%;        /* primary */
+    --ring: 222.2 47.4% 11.2%;               /* match primary for focus */
 
     /* Radius */
     --radius: 0.6rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;   /* ~slate-950 */
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 5.5%;
+    /* Surfaces (Dark - black family, Vercel-like) */
+    --background: 0 0% 0%;                    /* pure black background */
+    --foreground: 210 40% 98%;                /* near-white text */
+    --card: 0 0% 6%;                           /* subtle elevation over black */
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 5.5%;
+    --popover: 0 0% 6%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 245 75% 65%;        /* slightly brighter for dark */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 215 23% 18%;      /* slate-800 */
+    /* Brand - Minimal (Dark) */
+    --primary: 0 0% 100%;                      /* white primary */
+    --primary-foreground: 222.2 47.4% 11.2%;   /* dark text on white primary */
+    --secondary: 0 0% 12%;                     /* deep neutral for fills */
     --secondary-foreground: 210 40% 98%;
-    --accent: 174 72% 45%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 0 0% 100%;                        /* align accent to primary (less color) */
+    --accent-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 217 19% 27%;
-    --muted-foreground: 215 20% 81%;
+    /* Semantic */
+    --muted: 0 0% 30%;                         /* neutral muted in dark */
+    --muted-foreground: 0 0% 80%;
     --destructive: 351 75% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 217 19% 27%;
-    --input: 217 19% 27%;
-    --ring: 245 75% 65%;
+    /* Lines & focus (Dark) */
+    --border: 0 0% 15%;                        /* subtle separators on black */
+    --input: 0 0% 15%;
+    --ring: 0 0% 100%;                         /* white focus ring */
   }
 }
 

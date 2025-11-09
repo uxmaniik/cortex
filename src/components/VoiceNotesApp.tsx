@@ -170,7 +170,16 @@ export function VoiceNotesApp() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger shortcuts when typing in inputs
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as any)?.isContentEditable
+      ) {
+        return
+      }
+
+      // Ignore when any modifier is pressed (avoid hijacking browser shortcuts like Ctrl+Shift+R)
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) {
         return
       }
 
