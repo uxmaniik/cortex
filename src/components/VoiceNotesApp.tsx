@@ -288,6 +288,9 @@ export function VoiceNotesApp() {
       setIsRecording(true)
       setRecordingTime(0)
 
+      // Play start beep if sound is enabled
+      playBeep(800, 100)
+
       recordingIntervalRef.current = setInterval(() => {
         setRecordingTime(prev => {
           if (prev >= 300) {
@@ -340,10 +343,39 @@ export function VoiceNotesApp() {
       
       toast.error(errorMessage)
     }
-  }, [user, generateDefaultTitle])
+  }, [user, generateDefaultTitle, playBeep])
+
+  // Play beep sound function
+  const playBeep = useCallback((frequency: number = 800, duration: number = 100) => {
+    if (!soundEnabled) return
+    
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      
+      oscillator.frequency.value = frequency
+      oscillator.type = 'sine'
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000)
+      
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + duration / 1000)
+    } catch (error) {
+      // Silently fail if audio context is not available
+      console.debug('Beep sound not available:', error)
+    }
+  }, [soundEnabled])
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
+      // Play stop beep if sound is enabled
+      playBeep(600, 150)
+      
       mediaRecorderRef.current.stop()
       setIsRecording(false)
       if (recordingIntervalRef.current) {
@@ -356,7 +388,7 @@ export function VoiceNotesApp() {
       }
       toast.success('Recording stopped')
     }
-  }, [isRecording])
+  }, [isRecording, playBeep])
 
   const uploadAudio = useCallback(async (audioBlob: Blob) => {
     if (!user) {
@@ -389,6 +421,9 @@ export function VoiceNotesApp() {
         })
 
       if (dbError) throw dbError
+
+      // Reset recording time after successful upload
+      setRecordingTime(0)
 
       toast.success('Voice note saved successfully')
       loadVoiceNotes()
@@ -776,7 +811,7 @@ export function VoiceNotesApp() {
               size="icon"
               onClick={() => setSoundEnabled(!soundEnabled)}
               aria-label={soundEnabled ? 'Mute sound' : 'Unmute sound'}
-              title={soundEnabled ? 'Mute (not implemented)' : 'Unmute (not implemented)'}
+              title={soundEnabled ? 'Mute recording sounds' : 'Enable recording sounds'}
               className="h-9 w-9"
             >
               {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
