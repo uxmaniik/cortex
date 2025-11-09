@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase'
 import { 
   Mic, Square, Play, Pause, LogOut, Edit2, Check, X, Trash2, 
-  Search, Volume2, VolumeX, ChevronDown, Grid, List, Menu
+  Search, Volume2, VolumeX, ChevronDown, Grid, List, Menu, ArrowUpDown
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,6 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardTitle } from '@/components/ui/card'
 import { Slider } from '@/components/ui/slider'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -67,12 +66,14 @@ export function VoiceNotesApp() {
   const [savingNotes, setSavingNotes] = useState<Set<string>>(new Set())
   const [viewType, setViewType] = useState<'list' | 'grid'>('list')
   const [currentTimeForRelative, setCurrentTimeForRelative] = useState(() => Date.now())
+  const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'title-desc' | 'duration-asc' | 'duration-desc'>('date-desc')
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const recordingTimeRef = useRef<number>(0)
   
   // Memoize supabase client to avoid recreating on every render
   const supabase = useMemo(() => createClient(), [])
@@ -111,20 +112,41 @@ export function VoiceNotesApp() {
     return () => clearInterval(interval)
   }, [])
 
-  // Filter notes based on search query
+  // Filter and sort notes
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredNotes(voiceNotes)
-    } else {
+    let filtered = voiceNotes
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
-      setFilteredNotes(
-        voiceNotes.filter(note =>
-          note.title.toLowerCase().includes(query) ||
-          new Date(note.created_at).toLocaleDateString().toLowerCase().includes(query)
-        )
+      filtered = voiceNotes.filter(note =>
+        note.title.toLowerCase().includes(query) ||
+        new Date(note.created_at).toLocaleDateString().toLowerCase().includes(query)
       )
     }
-  }, [searchQuery, voiceNotes])
+    
+    // Apply sorting
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'date-desc':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        case 'date-asc':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        case 'title-asc':
+          return a.title.localeCompare(b.title)
+        case 'title-desc':
+          return b.title.localeCompare(a.title)
+        case 'duration-asc':
+          return (a.duration || 0) - (b.duration || 0)
+        case 'duration-desc':
+          return (b.duration || 0) - (a.duration || 0)
+        default:
+          return 0
+      }
+    })
+    
+    setFilteredNotes(sorted)
+  }, [searchQuery, voiceNotes, sortBy])
 
   // Audio playback progress tracking
   useEffect(() => {
@@ -329,24 +351,31 @@ export function VoiceNotesApp() {
       mediaRecorder.onstop = async () => {
         const mimeType = selectedMimeType || mediaRecorder.mimeType || 'audio/webm'
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType })
-        await uploadAudio(audioBlob)
+        // Get the final duration from ref (should be updated by stopRecording)
+        const finalDuration = recordingTimeRef.current || 0
+        console.log('Recording stopped, duration:', finalDuration, 'ref:', recordingTimeRef.current) // Debug log
+        await uploadAudio(audioBlob, finalDuration)
         stream.getTracks().forEach(track => track.stop())
       }
 
       mediaRecorder.start()
       setIsRecording(true)
       setRecordingTime(0)
+      recordingTimeRef.current = 0
 
       // Play start beep if sound is enabled
       playBeep(800, 100)
 
       recordingIntervalRef.current = setInterval(() => {
         setRecordingTime(prev => {
-          if (prev >= 300) {
+          const newTime = prev + 1
+          // Update ref immediately and synchronously
+          recordingTimeRef.current = newTime
+          if (newTime >= 300) {
             stopRecording()
-            return prev
+            return newTime
           }
-          return prev + 1
+          return newTime
         })
       }, 1000)
 
@@ -396,24 +425,34 @@ export function VoiceNotesApp() {
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
-      // Play stop beep if sound is enabled
-      playBeep(600, 150)
+      // Capture the final recording time from state (most up-to-date)
+      // The ref might be slightly behind, so use state value
+      const finalTime = recordingTime > 0 ? recordingTime : recordingTimeRef.current
       
-      mediaRecorderRef.current.stop()
-      setIsRecording(false)
+      // Ensure ref is updated with final time
+      recordingTimeRef.current = finalTime
+      
+      // Play stop beep if sound is enabled (before stopping to ensure it plays)
+      if (soundEnabled) {
+        playBeep(600, 150)
+      }
+      
+      // Clear interval first to prevent further updates
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current)
         recordingIntervalRef.current = null
       }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop())
-        streamRef.current = null
-      }
+      
+      // Stop the MediaRecorder - onstop handler will use recordingTimeRef.current
+      mediaRecorderRef.current.stop()
+      
+      setIsRecording(false)
+      // Don't stop stream tracks here - let onstop handler do it
       toast.success('Recording stopped')
     }
-  }, [isRecording, playBeep])
+  }, [isRecording, playBeep, soundEnabled, recordingTime])
 
-  const uploadAudio = useCallback(async (audioBlob: Blob) => {
+  const uploadAudio = useCallback(async (audioBlob: Blob, duration: number) => {
     if (!user) {
       toast.error('You must be logged in to upload audio')
       return
@@ -433,13 +472,17 @@ export function VoiceNotesApp() {
 
       if (error) throw error
 
+      // Ensure duration is a valid number
+      const finalDuration = duration > 0 ? duration : 0
+      console.log('Uploading audio with duration:', finalDuration) // Debug log
+      
       const { error: dbError } = await supabase
         .from('voice_notes')
         .insert({
           user_id: user.id,
           title: generateDefaultTitle(),
           audio_url: fileName,
-          duration: recordingTime,
+          duration: finalDuration,
           file_size: audioBlob.size
         })
 
@@ -447,6 +490,7 @@ export function VoiceNotesApp() {
 
       // Reset recording time after successful upload
       setRecordingTime(0)
+      recordingTimeRef.current = 0
 
       toast.success('Voice note saved successfully')
       loadVoiceNotes()
@@ -454,7 +498,7 @@ export function VoiceNotesApp() {
       console.error('Error uploading audio:', error)
       toast.error('Failed to save voice note')
     }
-  }, [user, supabase, generateDefaultTitle, recordingTime, loadVoiceNotes])
+  }, [user, supabase, generateDefaultTitle, loadVoiceNotes])
 
   const playAudio = useCallback(async (audioPathOrUrl: string, noteId: string) => {
     if (currentlyPlaying === noteId) {
@@ -828,16 +872,20 @@ export function VoiceNotesApp() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-50">
+      <header className="bg-card dark:bg-background border-b sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold">Cortex</h1>
           
           <div className="flex items-center gap-2">
-            <Avatar className="cursor-pointer hover:opacity-80 transition-opacity" aria-label="User avatar">
-              <AvatarFallback className="bg-transparent border border-border h-9 w-9 text-sm font-medium">
-                {getUserInitial()}
-              </AvatarFallback>
-            </Avatar>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              aria-label={`Signed in as ${user?.email || 'user'}`}
+              title={`Signed in as ${user?.email || 'user'}`}
+            >
+              <span className="text-sm font-medium">{getUserInitial()}</span>
+            </Button>
             <ThemeToggle />
             <Button
               variant="ghost"
@@ -865,7 +913,7 @@ export function VoiceNotesApp() {
 
       <main className="max-w-6xl mx-auto px-4 py-12 space-y-12">
         {/* Recording Section */}
-        <section aria-label="Recording section">
+        <section aria-label="Recording section" className="mt-6 md:mt-10">
           <CardTitle className="text-2xl mb-6 text-center">Record a New Note</CardTitle>
           <Card className="bg-muted/30">
             <CardContent className="pt-6">
@@ -933,16 +981,50 @@ export function VoiceNotesApp() {
               </div>
               
               <div className="flex items-center gap-2 sm:gap-4">
+                {/* Sort Dropdown */}
+                <div className="flex items-center border rounded-md p-1 bg-background">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 gap-2" aria-label="Sort notes">
+                        <ArrowUpDown size={16} aria-hidden="true" />
+                        <span className="hidden sm:inline">Sort</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" sideOffset={4} className="w-48 -ml-[3px]">
+                      <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setSortBy('date-desc')}>
+                        <span className={sortBy === 'date-desc' ? 'font-medium' : ''}>Newest First</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortBy('date-asc')}>
+                        <span className={sortBy === 'date-asc' ? 'font-medium' : ''}>Oldest First</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortBy('title-asc')}>
+                        <span className={sortBy === 'title-asc' ? 'font-medium' : ''}>Title A-Z</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortBy('title-desc')}>
+                        <span className={sortBy === 'title-desc' ? 'font-medium' : ''}>Title Z-A</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortBy('duration-asc')}>
+                        <span className={sortBy === 'duration-asc' ? 'font-medium' : ''}>Shortest First</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortBy('duration-desc')}>
+                        <span className={sortBy === 'duration-desc' ? 'font-medium' : ''}>Longest First</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                
                 {/* Stats Dropdown */}
                 <div className="flex items-center border rounded-md p-1 bg-background">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-8 gap-2" aria-label="View statistics">
                         <Menu size={16} aria-hidden="true" />
-                        <span className="hidden sm:inline">Stats</span>
+                        <span>Stats</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuContent align="start" sideOffset={4} className="w-56 -ml-[3px]">
                       <DropdownMenuLabel>Statistics</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem className="flex items-center justify-between">
@@ -976,8 +1058,8 @@ export function VoiceNotesApp() {
                     aria-label="List view"
                     aria-pressed={viewType === 'list'}
                   >
-                    <List size={16} className="sm:mr-2" aria-hidden="true" />
-                    <span className="hidden sm:inline">List</span>
+                    <List size={16} className="mr-2" aria-hidden="true" />
+                    <span>List</span>
                   </Button>
                   <Separator orientation="vertical" className="h-6" aria-hidden="true" />
                   <Button
@@ -988,8 +1070,8 @@ export function VoiceNotesApp() {
                     aria-label="Grid view"
                     aria-pressed={viewType === 'grid'}
                   >
-                    <Grid size={16} className="sm:mr-2" aria-hidden="true" />
-                    <span className="hidden sm:inline">Grid</span>
+                    <Grid size={16} className="mr-2" aria-hidden="true" />
+                    <span>Grid</span>
                   </Button>
                 </div>
               </div>
@@ -1024,7 +1106,17 @@ export function VoiceNotesApp() {
                 const isExpanded = expandedNotes.has(note.id)
 
                 return (
-                  <Card key={note.id} className={`p-6 transition-all hover:shadow-md hover:border-primary/20 ${viewType === 'grid' ? 'h-full flex flex-col' : ''}`} role="listitem">
+                  <Card 
+                    key={note.id} 
+                    className={`p-6 transition-all ${viewType === 'grid' ? 'h-full flex flex-col hover:shadow-md dark:hover:border-primary/20 dark:hover:bg-muted/20' : 'cursor-pointer'} ${viewType === 'list' && !editingId ? 'cursor-pointer' : ''}`}
+                    role="listitem"
+                    onClick={(e) => {
+                      // Only expand if clicking on the card itself, not on buttons or inputs
+                      if (viewType === 'list' && editingId !== note.id && !(e.target as HTMLElement).closest('button, input, textarea')) {
+                        toggleExpanded(note.id)
+                      }
+                    }}
+                  >
                     {viewType === 'grid' ? (
                       // Grid View - Compact Design
                       <div className="flex flex-col h-full">
@@ -1100,8 +1192,93 @@ export function VoiceNotesApp() {
                             >
                               <Trash2 size={16} className="text-destructive" aria-hidden="true" />
                             </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleExpanded(note.id)
+                              }}
+                              className="h-8 w-8"
+                              aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
+                              aria-expanded={isExpanded}
+                              title={isExpanded ? 'Collapse' : 'Expand'}
+                            >
+                              <ChevronDown 
+                                size={16} 
+                                className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                aria-hidden="true"
+                              />
+                            </Button>
                           </div>
                         </div>
+                        
+                        {/* Grid View Expanded Content */}
+                        {isExpanded && (
+                          <div className="mt-4 pt-4 border-t space-y-4">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <div className="flex items-center gap-3">
+                                <span>Duration: {formatDuration(note.duration)}</span>
+                                {note.play_count !== undefined && (
+                                  <span>Played: {note.play_count} {note.play_count === 1 ? 'time' : 'times'}</span>
+                                )}
+                              </div>
+                              <span>{new Date(note.created_at).toLocaleString()}</span>
+                            </div>
+
+                            <Separator aria-hidden="true" />
+
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <label htmlFor={`notes-grid-${note.id}`} className="text-xs font-medium">Notes/Annotations</label>
+                                {editingNotes[note.id] !== undefined && editingNotes[note.id] !== (note.notes || '') && (
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => saveNotes(note.id)}
+                                    disabled={savingNotes.has(note.id)}
+                                    className="h-6 text-xs px-2"
+                                    aria-label="Save notes"
+                                  >
+                                    {savingNotes.has(note.id) ? 'Saving...' : 'Save'}
+                                  </Button>
+                                )}
+                              </div>
+                              <Textarea
+                                id={`notes-grid-${note.id}`}
+                                placeholder="Add your notes or annotations here..."
+                                value={editingNotes[note.id] !== undefined ? editingNotes[note.id] : (note.notes || '')}
+                                onChange={(e) => {
+                                  setEditingNotes(prev => ({
+                                    ...prev,
+                                    [note.id]: e.target.value
+                                  }))
+                                }}
+                                onBlur={() => {
+                                  const currentValue = editingNotes[note.id]
+                                  if (currentValue !== undefined && currentValue !== (note.notes || '')) {
+                                    saveNotes(note.id)
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Escape') {
+                                    const currentValue = editingNotes[note.id]
+                                    if (currentValue !== undefined && currentValue !== (note.notes || '')) {
+                                      saveNotes(note.id)
+                                    }
+                                  }
+                                }}
+                                className="min-h-[100px] resize-none text-sm"
+                                aria-label="Notes and annotations"
+                              />
+                              {!note.notes && editingNotes[note.id] === undefined && (
+                                <p className="text-xs text-muted-foreground">
+                                  Click to add notes or annotations
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       // List View
